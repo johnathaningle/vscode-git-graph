@@ -1,5 +1,13 @@
 # Change Log
 
+## 1.30.1 - 2026-10-15
+* Updated dependencies with known vulnerabilities: `iconv-lite` 0.5.0 -> 0.6.3 (runtime) and `uglify-js` 3.10.0 -> 3.19.3 (build). The extension's runtime dependencies now have no known vulnerabilities.
+* Fixed the web build (`web/tsconfig.json`) so it compiles against a current TypeScript and `@types/*` toolchain.
+* Fixed three GitHub avatar unit tests that failed on Node.js >= 18 due to a change in the behaviour of `url.parse`.
+* Added a "Build VSIX" GitHub Actions workflow that runs the tests, packages the extension into a `.vsix`, and generates a `SHA256SUMS.txt` checksum file. Release builds attach both files to the GitHub Release.
+* Added a Dependabot configuration to keep npm and GitHub Actions dependencies up to date.
+* Updated the "Build & Test" GitHub Actions workflow to Actions v4 and Node.js 22.
+
 ## 1.30.0 - 2021-04-05
 * #395 Added a "Force Fetch" option onto the "Fetch into Local Branch" Dialog, allowing any local branch (that's not checked out) to be reset to the remote branch. This dialog is accessed via the Remote Branch Context Menu.
 * #457 New "View Diff with Working File" action on the File Context Menu in the Commit Details View.

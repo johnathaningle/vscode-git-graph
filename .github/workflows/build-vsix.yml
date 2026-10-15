@@ -1,0 +1,78 @@
+name: 'Build VSIX'
+
+on:
+  push:
+    branches:
+      - master
+      - develop
+  pull_request:
+    branches:
+      - master
+      - develop
+  release:
+    types:
+      - published
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  id-token: write
+  attestations: write
+
+jobs:
+  build-vsix:
+    name: 'Build VSIX'
+    runs-on: ubuntu-latest
+    steps:
+      - name: 'Checkout'
+        uses: actions/checkout@v4
+
+      - name: 'Setup Node.js'
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: 'Install dependencies'
+        run: npm ci
+
+      - name: 'Run tests'
+        run: npm test
+
+      - name: 'Compile extension'
+        run: npm run compile
+
+      - name: 'Package VSIX'
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          DIST_DIR="${RUNNER_TEMP}/vsix"
+          mkdir -p "${DIST_DIR}"
+          npx --yes @vscode/vsce@3.9.2 package --out "${DIST_DIR}/git-graph-${VERSION}.vsix"
+          echo "DIST_DIR=${DIST_DIR}" >> "$GITHUB_ENV"
+
+      - name: 'Generate SHA-256 checksums'
+        run: |
+          cd "${DIST_DIR}"
+          sha256sum git-graph-*.vsix > SHA256SUMS.txt
+          cat SHA256SUMS.txt
+
+      - name: 'Attest build provenance'
+        continue-on-error: true
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: '${{ runner.temp }}/vsix/git-graph-*.vsix'
+
+      - name: 'Upload VSIX artifact'
+        uses: actions/upload-artifact@v4
+        with:
+          name: git-graph-vsix
+          path: '${{ runner.temp }}/vsix/*'
+          if-no-files-found: error
+
+      - name: 'Attach VSIX to release'
+        if: github.event_name == 'release'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            ${{ runner.temp }}/vsix/git-graph-*.vsix
+            ${{ runner.temp }}/vsix/SHA256SUMS.txt
